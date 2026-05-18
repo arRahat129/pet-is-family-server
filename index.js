@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config();
 
 const uri = process.env.MONGODB_URI;
@@ -37,6 +37,15 @@ async function run() {
             const petData = req.body;
             console.log(petData);
             const result = await petCollection.insertOne(petData);
+            res.json(result);
+        })
+
+        app.get('/pet/:petId', async(req, res) => {
+            // console.log(req);
+            const {petId} = req.params;
+
+            const result = await petCollection.findOne({_id: new ObjectId(petId)});
+
             res.json(result);
         })
 
