@@ -51,12 +51,16 @@ async function run() {
         })
 
         app.get('/adoption/adopter/:userId', async (req, res) => {
-            const result = await adoptionCollection.find({
-                adopterId: req.params.userId
-            }).toArray();
-
+            const { userId } = req.params;
+            const result = await adoptionCollection.find({ adopterId: userId }).toArray();
             res.json(result);
-        });
+        })
+
+        app.get('/adoption/owner/:userId', async (req, res) => {
+            const { userId } = req.params;
+            const result = await petCollection.find({ userId: userId }).toArray();
+            res.json(result);
+        })
 
         app.post('/adoption/', async (req, res) => {
             const adoptionData = req.body;
