@@ -50,13 +50,13 @@ async function run() {
             res.json(result);
         })
 
-        app.get('/adoption/:userId', async (req, res) => {
-            const { userId } = req.params;
-
-            const result = await adoptionCollection.find({ adopterId: userId }).toArray();
+        app.get('/adoption/adopter/:userId', async (req, res) => {
+            const result = await adoptionCollection.find({
+                adopterId: req.params.userId
+            }).toArray();
 
             res.json(result);
-        })
+        });
 
         app.post('/adoption/', async (req, res) => {
             const adoptionData = req.body;
