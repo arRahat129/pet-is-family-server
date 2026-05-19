@@ -50,7 +50,15 @@ async function run() {
             res.json(result);
         })
 
-        app.post('/adoption', async (req, res) => {
+        app.get('/adoption/:userId', async (req, res) => {
+            const { userId } = req.params;
+
+            const result = await adoptionCollection.find({ adopterId: userId }).toArray();
+
+            res.json(result);
+        })
+
+        app.post('/adoption/', async (req, res) => {
             const adoptionData = req.body;
             const result = await adoptionCollection.insertOne(adoptionData);
             res.json(result);
