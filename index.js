@@ -68,6 +68,11 @@ async function run() {
             res.json(result);
         })
 
+        app.get('/adoption', async (req, res) => {
+            const result = await adoptionCollection.find().toArray();
+            res.json(result);
+        });
+
         app.get('/adoption/adopter/:userId', async (req, res) => {
             const { userId } = req.params;
             const result = await adoptionCollection.find({ adopterId: userId }).toArray();
@@ -83,8 +88,106 @@ async function run() {
 
         app.post('/adoption', async (req, res) => {
             const adoptionData = req.body;
+
+            //
+            const pet = await petCollection.findOne({
+                _id: new ObjectId(adoptionData.petId)
+            });
+
+            if (!pet) {
+                return res.status(404).json({ message: "Pet Not Found" })
+            }
+
+            if (pet.adoptionStatus === "adopted") {
+                return res.status(400).json({
+                    message: "This pet is already adopted"
+                });
+            }
+            //
+
             const result = await adoptionCollection.insertOne(adoptionData);
             res.json(result);
+        });
+
+        // Approve Request
+        app.patch('/adoption/:id/approve', async (req, res) => {
+            const { id } = req.params;
+
+            const request = await adoptionCollection.findOne({
+                _id: new ObjectId(id)
+            });
+
+            if (!request) {
+                return res.status(404).json({ message: "Request not found" });
+            }
+
+            await adoptionCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: "approved" } }
+            );
+
+            await adoptionCollection.updateMany(
+                {
+                    petId: request.petId,
+                    _id: { $ne: new ObjectId(id) }
+                },
+                { $set: { status: "rejected" } }
+            );
+
+            await petCollection.updateOne(
+                { _id: new ObjectId(request.petId) },
+                { $set: { adoptionStatus: "adopted" } }
+            );
+
+            res.json({ success: true });
+        });
+
+        // Reject Request
+        app.patch('/adoption/:id/reject', async (req, res) => {
+            const { id } = req.params;
+
+            await adoptionCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: "rejected" } }
+            );
+
+            res.json({ success: true });
+        });
+
+        // Cancel
+        app.patch('/adoption/:id/cancel', async (req, res) => {
+
+            const { id } = req.params;
+
+            const request = await adoptionCollection.findOne({
+                _id: new ObjectId(id)
+            });
+
+            if (!request) {
+                return res.status(404).json({
+                    message: "Request not found"
+                });
+            }
+
+            if (request.status === "approved") {
+                return res.status(400).json({
+                    message: "Cannot cancel approved request"
+                });
+            }
+
+            const result = await adoptionCollection.updateOne(
+                { _id: new ObjectId(id) },
+                {
+                    $set: {
+                        status: "cancelled"
+                    }
+                }
+            );
+
+            res.json({
+                success: true,
+                result
+            });
         });
 
         await client.db("admin").command({ ping: 1 });
