@@ -49,7 +49,19 @@ async function run() {
 
             res.json(result);
         })
-        
+
+        app.patch('/pet/:petId', async (req, res) => {
+            const { petId } = req.params;
+            const updatedPetData = req.body;
+
+            const result = await petCollection.updateOne(
+                { _id: new ObjectId(petId) },
+                { $set: updatedPetData }
+            );
+
+            res.json(result);
+        });
+
         app.get('/pet/owner/:userId', async (req, res) => {
             const { userId } = req.params;
             const result = await petCollection.find({ userId: userId }).toArray();
