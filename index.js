@@ -101,7 +101,7 @@ async function run() {
             res.json(result);
         })
 
-        app.get('/adoption', verifyToken, async (req, res) => {
+        app.get('/adoption', async (req, res) => {
             const result = await adoptionCollection.find().toArray();
             res.json(result);
         });
