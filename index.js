@@ -43,10 +43,12 @@ const verifyToken = async (req, res, next) => {
 
     try {
         const { payload } = await jwtVerify(token, JWKS);
-        console.log(payload);
+        // console.log(payload);
+        req.user = payload;
         next();
     }
     catch (error) {
+        console.log("JWT ERROR:", error);
         return res.status(403).json({ message: "Forbidden" });
     }
 }
@@ -54,7 +56,7 @@ const verifyToken = async (req, res, next) => {
 async function run() {
     try {
 
-        await client.connect();
+        // await client.connect();
 
         const db = client.db('pet-is-family');
         const petCollection = db.collection('pets');
@@ -216,7 +218,7 @@ async function run() {
             });
         });
 
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
