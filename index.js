@@ -55,15 +55,21 @@ async function run() {
             const result = await petCollection.find({ userId: userId }).toArray();
             res.json(result);
         })
-        
+
         app.get('/adoption/adopter/:userId', async (req, res) => {
             const { userId } = req.params;
             const result = await adoptionCollection.find({ adopterId: userId }).toArray();
             res.json(result);
         })
 
+        app.get('/adoption/pet/:petId', async (req, res) => {
+            const { petId } = req.params;
+            const result = await adoptionCollection.find({ petId: petId }).toArray();
+            res.json(result);
+        })
 
-        app.post('/adoption/', async (req, res) => {
+
+        app.post('/adoption', async (req, res) => {
             const adoptionData = req.body;
             const result = await adoptionCollection.insertOne(adoptionData);
             res.json(result);
