@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 dotenv.config();
 
 const uri = process.env.MONGODB_URI;
@@ -20,6 +21,36 @@ const client = new MongoClient(uri, {
     }
 });
 
+
+const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`)
+)
+
+const verifyToken = async (req, res, next) => {
+    const authHeader = req?.headers.authorization;
+    // console.log(authHeader);
+
+    if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized || You are roaming in the wrong way " });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized || You are roaming in the wrong way " });
+    }
+    // console.log(token);
+
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        console.log(payload);
+        next();
+    }
+    catch (error) {
+        return res.status(403).json({ message: "Forbidden" });
+    }
+}
+
 async function run() {
     try {
 
@@ -34,14 +65,14 @@ async function run() {
             res.json(result);
         })
 
-        app.post('/pet', async (req, res) => {
+        app.post('/pet', verifyToken, async (req, res) => {
             const petData = req.body;
             console.log(petData);
             const result = await petCollection.insertOne(petData);
             res.json(result);
         })
 
-        app.get('/pet/:petId', async (req, res) => {
+        app.get('/pet/:petId', verifyToken, async (req, res) => {
             // console.log(req);
             const { petId } = req.params;
 
@@ -50,7 +81,7 @@ async function run() {
             res.json(result);
         })
 
-        app.patch('/pet/:petId', async (req, res) => {
+        app.patch('/pet/:petId', verifyToken, async (req, res) => {
             const { petId } = req.params;
             const updatedPetData = req.body;
 
@@ -62,31 +93,31 @@ async function run() {
             res.json(result);
         });
 
-        app.get('/pet/owner/:userId', async (req, res) => {
+        app.get('/pet/owner/:userId', verifyToken, async (req, res) => {
             const { userId } = req.params;
             const result = await petCollection.find({ userId: userId }).toArray();
             res.json(result);
         })
 
-        app.get('/adoption', async (req, res) => {
+        app.get('/adoption', verifyToken, async (req, res) => {
             const result = await adoptionCollection.find().toArray();
             res.json(result);
         });
 
-        app.get('/adoption/adopter/:userId', async (req, res) => {
+        app.get('/adoption/adopter/:userId', verifyToken, async (req, res) => {
             const { userId } = req.params;
             const result = await adoptionCollection.find({ adopterId: userId }).toArray();
             res.json(result);
         })
 
-        app.get('/adoption/pet/:petId', async (req, res) => {
+        app.get('/adoption/pet/:petId', verifyToken, async (req, res) => {
             const { petId } = req.params;
             const result = await adoptionCollection.find({ petId: petId }).toArray();
             res.json(result);
         })
 
 
-        app.post('/adoption', async (req, res) => {
+        app.post('/adoption', verifyToken, async (req, res) => {
             const adoptionData = req.body;
 
             //
@@ -110,7 +141,7 @@ async function run() {
         });
 
         // Approve Request
-        app.patch('/adoption/:id/approve', async (req, res) => {
+        app.patch('/adoption/:id/approve', verifyToken, async (req, res) => {
             const { id } = req.params;
 
             const request = await adoptionCollection.findOne({
@@ -143,7 +174,7 @@ async function run() {
         });
 
         // Reject Request
-        app.patch('/adoption/:id/reject', async (req, res) => {
+        app.patch('/adoption/:id/reject', verifyToken, async (req, res) => {
             const { id } = req.params;
 
             await adoptionCollection.updateOne(
@@ -155,7 +186,7 @@ async function run() {
         });
 
         // Cancel
-        app.patch('/adoption/:id/cancel', async (req, res) => {
+        app.delete('/adoption/:id', verifyToken, async (req, res) => {
 
             const { id } = req.params;
 
@@ -175,13 +206,8 @@ async function run() {
                 });
             }
 
-            const result = await adoptionCollection.updateOne(
+            const result = await adoptionCollection.deleteOne(
                 { _id: new ObjectId(id) },
-                {
-                    $set: {
-                        status: "cancelled"
-                    }
-                }
             );
 
             res.json({
