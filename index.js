@@ -170,6 +170,24 @@ async function run() {
             res.json(result);
         })
 
+        app.delete('/pet/owner/:petId', verifyToken, async (req, res) => {
+            try {
+                const { petId } = await req.params;
+
+                if (!ObjectId.isValid(petId)) {
+                    return res.status(400).json({ message: "Invalid petId" });
+                }
+
+                const result = await petCollection.deleteOne({
+                    _id: new ObjectId(petId)
+                });
+
+                res.json(result);
+            } catch (error) {
+                res.status(500).json({ message: "Server error", error: error.message });
+            }
+        });
+
         app.get('/adoption', async (req, res) => {
             const result = await adoptionCollection.find().toArray();
             res.json(result);
