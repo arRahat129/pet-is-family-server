@@ -69,9 +69,66 @@ async function run() {
         const adoptionCollection = db.collection('adoptions');
 
         app.get('/pet', async (req, res) => {
-            const result = await petCollection.find().toArray();
-            res.json(result);
-        })
+            try {
+                const { search, species, sort } = req.query;
+
+                let queryCondition = {};
+
+
+                if (search && search.trim() !== "") {
+                    const searchRegex = new RegExp(search.trim(), "i");
+
+                    queryCondition.$or = [
+                        { petName: { $regex: searchRegex } },
+                        { breed: { $regex: searchRegex } },
+                        { species: { $regex: searchRegex } }
+                    ];
+                }
+
+
+                if (species && species.trim() !== "") {
+                    const speciesArray = species.split(",").map(s => s.trim());
+
+                    queryCondition.species = {
+                        $in: speciesArray
+                    };
+                }
+
+
+                let sortCondition = {};
+
+                switch (sort) {
+                    case "oldest":
+                        sortCondition._id = 1;
+                        break;
+
+                    case "name-asc":
+                        sortCondition.petName = 1;
+                        break;
+
+                    case "name-desc":
+                        sortCondition.petName = -1;
+                        break;
+
+                    case "newest":
+                    default:
+                        sortCondition._id = -1;
+                }
+
+                const result = await petCollection
+                    .find(queryCondition)
+                    .sort(sortCondition)
+                    .toArray();
+
+                res.json(result);
+
+            } catch (error) {
+                console.error("Error fetching pets:", error);
+                res.status(500).json({
+                    message: "Internal server error reading pets"
+                });
+            }
+        });
 
         app.post('/pet', verifyToken, async (req, res) => {
             const petData = req.body;
