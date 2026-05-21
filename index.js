@@ -11,7 +11,10 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: [`${process.env.BETTER_AUTH_URL}`, "https://pet-is-family.vercel.app"],
+    origin: [
+        "http://localhost:3000",
+        "https://pet-is-family.vercel.app"
+    ],
     credentials: true
 }));
 app.use(express.json());
