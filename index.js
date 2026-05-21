@@ -150,9 +150,15 @@ async function run() {
             const { petId } = req.params;
             const updatedPetData = req.body;
 
+            const cleanData = {
+                ...updatedPetData,
+                species: typeof updatedPetData.species === "string" ? updatedPetData.species : "",
+                gender: typeof updatedPetData.gender === "string" ? updatedPetData.gender : "",
+            };
+
             const result = await petCollection.updateOne(
                 { _id: new ObjectId(petId) },
-                { $set: updatedPetData }
+                { $set: cleanData }
             );
 
             res.json(result);
